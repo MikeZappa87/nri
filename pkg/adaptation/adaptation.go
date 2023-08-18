@@ -183,6 +183,16 @@ func (r *Adaptation) RemovePodSandbox(ctx context.Context, evt *StateChangeEvent
 	return r.StateChange(ctx, evt)
 }
 
+func (r *Adaptation) CreateNetworkNamespace(ctx context.Context, evt *StateChangeEvent) error {
+	evt.Event = Event_NETWORK_NAMESPACE_SETUP
+	return r.StateChange(ctx, evt)
+}
+
+func (r *Adaptation) PodNetworkSetup(ctx context.Context, evt *StateChangeEvent) error {
+	evt.Event = Event_NETWORK_SETUP
+	return r.StateChange(ctx, evt)
+}
+
 // CreateContainer relays the corresponding CRI request to plugins.
 func (r *Adaptation) CreateContainer(ctx context.Context, req *CreateContainerRequest) (*CreateContainerResponse, error) {
 	r.Lock()

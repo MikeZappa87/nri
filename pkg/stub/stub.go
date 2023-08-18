@@ -81,6 +81,14 @@ type RemovePodInterface interface {
 	RemovePodSandbox(context.Context, *api.PodSandbox) error
 }
 
+type CreateNetworkNamespaceInterface interface {
+	CreateNetworkNamespace(context.Context, *api.PodSandbox) (error, *api.PodNetworkNamespace)
+}
+
+type SetupNetworkNamespaceInterface interface {
+	SetupNetworkNamespace(context.Context, *api.PodSandbox) (error, *api.PodNetworkNamespace)
+}
+
 // CreateContainerInterface handles CreateContainer API requests.
 type CreateContainerInterface interface {
 	// CreateContainer relays a CreateContainer request to the plugin.
@@ -253,20 +261,22 @@ type stub struct {
 
 // Handlers for NRI plugin event and request.
 type handlers struct {
-	Configure           func(context.Context, string, string, string) (api.EventMask, error)
-	Synchronize         func(context.Context, []*api.PodSandbox, []*api.Container) ([]*api.ContainerUpdate, error)
-	Shutdown            func(context.Context)
-	RunPodSandbox       func(context.Context, *api.PodSandbox) error
-	StopPodSandbox      func(context.Context, *api.PodSandbox) error
-	RemovePodSandbox    func(context.Context, *api.PodSandbox) error
-	CreateContainer     func(context.Context, *api.PodSandbox, *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error)
-	StartContainer      func(context.Context, *api.PodSandbox, *api.Container) error
-	UpdateContainer     func(context.Context, *api.PodSandbox, *api.Container, *api.LinuxResources) ([]*api.ContainerUpdate, error)
-	StopContainer       func(context.Context, *api.PodSandbox, *api.Container) ([]*api.ContainerUpdate, error)
-	RemoveContainer     func(context.Context, *api.PodSandbox, *api.Container) error
-	PostCreateContainer func(context.Context, *api.PodSandbox, *api.Container) error
-	PostStartContainer  func(context.Context, *api.PodSandbox, *api.Container) error
-	PostUpdateContainer func(context.Context, *api.PodSandbox, *api.Container) error
+	Configure              func(context.Context, string, string, string) (api.EventMask, error)
+	Synchronize            func(context.Context, []*api.PodSandbox, []*api.Container) ([]*api.ContainerUpdate, error)
+	Shutdown               func(context.Context)
+	RunPodSandbox          func(context.Context, *api.PodSandbox) error
+	StopPodSandbox         func(context.Context, *api.PodSandbox) error
+	RemovePodSandbox       func(context.Context, *api.PodSandbox) error
+	CreateContainer        func(context.Context, *api.PodSandbox, *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error)
+	StartContainer         func(context.Context, *api.PodSandbox, *api.Container) error
+	UpdateContainer        func(context.Context, *api.PodSandbox, *api.Container, *api.LinuxResources) ([]*api.ContainerUpdate, error)
+	StopContainer          func(context.Context, *api.PodSandbox, *api.Container) ([]*api.ContainerUpdate, error)
+	RemoveContainer        func(context.Context, *api.PodSandbox, *api.Container) error
+	PostCreateContainer    func(context.Context, *api.PodSandbox, *api.Container) error
+	PostStartContainer     func(context.Context, *api.PodSandbox, *api.Container) error
+	PostUpdateContainer    func(context.Context, *api.PodSandbox, *api.Container) error
+	CreateNetworkNamespace func(context.Context, *api.PodSandbox) (error, *api.PodNetworkNamespace)
+	SetupNetworkNamespace  func(context.Context, *api.PodSandbox) (error, *api.PodNetworkNamespace)
 }
 
 // New creates a stub with the given plugin and options.
@@ -755,6 +765,14 @@ func (stub *stub) setupHandlers() error {
 	if plugin, ok := stub.plugin.(PostUpdateContainerInterface); ok {
 		stub.handlers.PostUpdateContainer = plugin.PostUpdateContainer
 		stub.events.Set(api.Event_POST_UPDATE_CONTAINER)
+	}
+	if plugin, ok := stub.plugin.(CreateNetworkNamespaceInterface); ok {
+		stub.handlers.CreateNetworkNamespace = plugin.CreateNetworkNamespace
+		stub.events.Set(api.Event_NETWORK_NAMESPACE_SETUP)
+	}
+	if plugin, ok := stub.plugin.(SetupNetworkNamespaceInterface); ok {
+		stub.handlers.SetupNetworkNamespace = plugin.SetupNetworkNamespace
+		stub.events.Set(api.Event_NETWORK_SETUP)
 	}
 
 	if stub.events == 0 {

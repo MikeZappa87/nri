@@ -187,6 +187,8 @@ message StateChangeEvent {
   // Container this notification is sent for. If the event is related to a pod,
   // container is nil.
   Container container = 3;
+
+  PodNetworkNamespace netns = 4;
 }
 
 // Empty response for those *Requests that are semantically events.
@@ -206,7 +208,9 @@ enum Event {
   POST_UPDATE_CONTAINER = 9;
   STOP_CONTAINER = 10;
   REMOVE_CONTAINER = 11;
-  LAST = 12;
+  NETWORK_NAMESPACE_SETUP = 12;
+  NETWORK_SETUP = 13;
+  LAST = 14;
 }
 
 // Pod metadata that is considered relevant for a plugin.
@@ -230,6 +234,41 @@ message LinuxPodSandbox {
   string cgroups_path = 4; // for NRI v1 emulation
   repeated LinuxNamespace namespaces = 5; // for NRI v1 emulation
   LinuxResources resources = 6; // for NRI v1 emulation
+}
+
+message PodNetworkNamespace {
+  //name could be cni network configuration name
+	string name = 1;
+  // interface name and PodInterface
+  map<string,PodInterface> interfaces = 2;
+  repeated PodRoute routes = 3;
+	string netns_path = 4;
+  PodDNS dns = 5;
+}
+
+message PodInterface {
+  string name = 1;
+	string ip_address = 2;
+	string mac_address = 3;
+  //possible use case is <"vrf", 12> where the extension data could provide this
+  map<string,string> extension_data = 4;
+}
+
+// How does multi-hop look?
+message PodRoute {
+  string dst = 1;
+	string interface_name = 2;
+	string next_hop = 3;
+  //possible use case is <src, x.x.x.x> where the src attribute could be returned.
+  //This gets messy fast or at least it could. Better typed objects is the way. 
+  map<string,string> extension_data = 4;
+}
+
+message PodDNS {
+  repeated string nameservers = 1;
+  string domain = 2;
+  repeated string search = 3;
+  repeated string options = 4;
 }
 
 // Container metadata that is considered relevant for a plugin.
